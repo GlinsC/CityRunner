@@ -1,0 +1,161 @@
+:root {
+    color-scheme: dark;
+    --bg: #07111f;
+    --panel: rgba(13, 24, 39, 0.9);
+    --panel-2: rgba(255, 255, 255, 0.06);
+    --text: #f5f7ff;
+    --muted: #8fa0bf;
+    --accent: #62f2c2;
+    --accent-strong: #28b7b3;
+    --border: rgba(255, 255, 255, 0.1);
+    --shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+}
+
+* { box-sizing: border-box; }
+body {
+    margin: 0;
+    font-family: 'Inter', sans-serif;
+    background: radial-gradient(circle at top left, #15304f, var(--bg) 55%);
+    color: var(--text);
+    min-height: 100vh;
+}
+
+.page-shell {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 40px 20px 80px;
+}
+
+.hero-card, .race-card, .map-card, .info-card, .stat-card, .empty-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    box-shadow: var(--shadow);
+    backdrop-filter: blur(20px);
+}
+
+.hero-card {
+    padding: 32px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 20px;
+    margin-bottom: 24px;
+}
+
+.eyebrow {
+    text-transform: uppercase;
+    letter-spacing: 0.28em;
+    font-size: 0.75rem;
+    color: var(--accent);
+    margin: 0 0 8px;
+    font-weight: 700;
+}
+
+h1, h2, h3, h4 { margin: 0 0 10px; }
+h1 { font-size: clamp(1.9rem, 3vw, 2.8rem); }
+.hero-text, .muted, .route-info, .comment-item p { color: var(--muted); }
+.hero-pill, .card-badge, .pill, .card-meta {
+    display: inline-flex;
+    align-items: center;
+    padding: 10px 14px;
+    border-radius: 999px;
+    background: var(--panel-2);
+    color: var(--text);
+    font-size: 0.9rem;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.stat-card {
+    padding: 22px;
+}
+
+.stat-card.accent { background: linear-gradient(135deg, rgba(98,242,194,0.2), rgba(40,183,179,0.15)); }
+.stat-number { display: block; font-size: 1.6rem; font-weight: 700; margin-bottom: 6px; }
+.stat-label { color: var(--muted); }
+
+.list-section { margin-top: 10px; }
+.section-title-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+.ghost-link, .back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 18px;
+}
+
+.race-card, .empty-card {
+    padding: 22px;
+}
+
+.card-top { display: flex; justify-content: space-between; margin-bottom: 12px; }
+.route-row { display: flex; flex-wrap: wrap; gap: 8px; color: var(--muted); margin: 14px 0 18px; }
+.primary-btn {
+    border: none;
+    padding: 11px 16px;
+    border-radius: 999px;
+    background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+    color: #021018;
+    font-weight: 800;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.detail-page { padding-top: 24px; }
+.detail-hero {
+    background: linear-gradient(135deg, rgba(98,242,194,0.18), rgba(13,24,39,0.95));
+    border: 1px solid var(--border);
+    border-radius: 28px;
+    padding: 28px;
+    margin-bottom: 20px;
+}
+.detail-badges { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+.detail-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 20px;
+}
+.map-card, .info-card { padding: 24px; }
+.map-placeholder {
+    min-height: 360px;
+    border-radius: 20px;
+    background: linear-gradient(135deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03));
+    border: 1px dashed rgba(255,255,255,0.18);
+    display: grid;
+    place-items: center;
+    margin-top: 14px;
+}
+.map-loading { text-align: center; max-width: 320px; color: var(--muted); }
+.route-info { margin-top: 14px; line-height: 1.7; }
+.info-card ul { padding-left: 18px; color: var(--muted); }
+.comments-box { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border); }
+.comment-item { padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.08); }
+.comment-item:last-child { border-bottom: none; }
+
+@media (max-width: 900px) {
+    .detail-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 640px) {
+    .hero-card, .detail-hero { flex-direction: column; align-items: flex-start; }
+    .stats-grid { grid-template-columns: 1fr; }
+    .section-title-row { flex-direction: column; align-items: flex-start; gap: 8px; }
+}

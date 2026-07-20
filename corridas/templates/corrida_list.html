@@ -1,0 +1,76 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CityRunner | Corridas</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'style.css' %}">
+</head>
+<body>
+    <div class="page-shell">
+        <header class="hero-card">
+            <div>
+                <p class="eyebrow">CityRunner</p>
+                <h1>Descubra sua próxima corrida urbana</h1>
+                <p class="hero-text">Explore rotas, acompanhe o trajeto e comece sua jornada com uma experiência moderna e intuitiva.</p>
+            </div>
+            <div class="hero-pill">⚡ Mapa interativo • Rotas em tempo real</div>
+        </header>
+
+        <section class="stats-grid">
+            <article class="stat-card accent">
+                <span class="stat-number">{{ corridas.count }}</span>
+                <span class="stat-label">Corridas disponíveis</span>
+            </article>
+            <article class="stat-card">
+                <span class="stat-number">24/7</span>
+                <span class="stat-label">Acompanhamento</span>
+            </article>
+            <article class="stat-card">
+                <span class="stat-number">100%</span>
+                <span class="stat-label">Foco em performance</span>
+            </article>
+        </section>
+
+        <section class="list-section">
+            <div class="section-title-row">
+                <div>
+                    <p class="eyebrow">Rotas</p>
+                    <h2>Corridas em destaque</h2>
+                </div>
+                <a href="#" class="ghost-link">Ver mapa completo</a>
+            </div>
+
+            <div class="card-grid">
+                {% for corrida in corridas %}
+                <article class="race-card">
+                    <div class="card-top">
+                        <span class="card-badge">#{{ corrida.id }}</span>
+                        <span class="card-meta">{{ corrida.distancia }} km</span>
+                    </div>
+                    <h3>{{ corrida.nome }}</h3>
+                    <p>{{ corrida.descricao|truncatechars:120 }}</p>
+                    <div class="route-row">
+                        <span>📍 {{ corrida.local_inicio }}</span>
+                        <span>→</span>
+                        <span>📍 {{ corrida.local_fim }}</span>
+                    </div>
+                    <a class="primary-btn" href="{% url 'corrida_detail' corrida.id %}">Abrir corrida</a>
+                </article>
+                {% empty %}
+                <article class="empty-card">
+                    <h3>Nenhuma corrida cadastrada ainda</h3>
+                    <p>Adicione uma corrida pela API para visualizá-la aqui.</p>
+                </article>
+                {% endfor %}
+            </div>
+        </section>
+    </div>
+
+    <script src="{% static 'script.js' %}"></script>
+</body>
+</html>

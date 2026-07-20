@@ -1,0 +1,153 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ corrida.nome }} | CityRunner</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet">
+
+    <link rel="stylesheet" href="{% static 'style.css' %}">
+</head>
+
+<body>
+
+    <div class="page-shell detail-page">
+
+        <a class="back-link" href="{% url 'corrida_list' %}">
+            ← Voltar para corridas
+        </a>
+
+        <section class="detail-hero">
+
+            <div>
+                <p class="eyebrow">Corrida selecionada</p>
+
+                <h1>{{ corrida.nome }}</h1>
+
+                <p>{{ corrida.descricao }}</p>
+            </div>
+
+            <div class="detail-badges">
+                <span class="pill">📍 {{ corrida.local_inicio }}</span>
+                <span class="pill">🏁 {{ corrida.local_fim }}</span>
+                <span class="pill">🛣️ {{ corrida.distancia }} km</span>
+            </div>
+
+        </section>
+
+        <section class="detail-grid">
+
+            <article class="map-card">
+
+                <div class="section-title-row">
+
+                    <div>
+                        <p class="eyebrow">Mapa</p>
+                        <h2>Trajeto da corrida</h2>
+                    </div>
+
+                    <button class="primary-btn" id="start-run-btn">
+                        Iniciar corrida
+                    </button>
+
+                </div>
+
+                <div id="map" class="map-placeholder">
+
+                    <div class="map-loading">
+                        <p>Clique em <strong>Iniciar corrida</strong> para visualizar o percurso.</p>
+                    </div>
+
+                </div>
+
+                <div class="route-info">
+                    <strong>Origem:</strong> {{ corrida.local_inicio }}<br>
+                    <strong>Destino:</strong> {{ corrida.local_fim }}
+                </div>
+
+            </article>
+
+            <aside class="info-card">
+
+                <p class="eyebrow">Detalhes</p>
+
+                <h3>Informações da rota</h3>
+
+                <ul>
+                    <li><strong>ID:</strong> {{ corrida.id }}</li>
+                    <li><strong>Distância:</strong> {{ corrida.distancia }} km</li>
+                    <li><strong>Origem:</strong> {{ corrida.local_inicio }}</li>
+                    <li><strong>Destino:</strong> {{ corrida.local_fim }}</li>
+                </ul>
+
+                <div class="comments-box">
+
+                    <h4>Comentários</h4>
+
+                    {% for comentario in comentarios %}
+
+                        <div class="comment-item">
+                            <p>{{ comentario.comentario }}</p>
+                            <span>{{ comentario.avaliacao }} ★</span>
+                        </div>
+
+                    {% empty %}
+
+                        <p class="muted">
+                            Ainda não há comentários para esta corrida.
+                        </p>
+
+                    {% endfor %}
+
+                </div>
+
+            </aside>
+
+        </section>
+
+    </div>
+
+    <!-- Dados enviados pelo Django para o JavaScript -->
+    <script>
+        window.CITYRUNNER_ROUTE = {
+            id: {{ corrida.id }},
+            title: "{{ corrida.nome|escapejs }}",
+            origin: {
+                lat: {{ corrida.origem_latitude|default_if_none:0 }},
+                lng: {{ corrida.origem_longitude|default_if_none:0 }}
+            },
+            destination: {
+                lat: {{ corrida.destino_latitude|default_if_none:0 }},
+                lng: {{ corrida.destino_longitude|default_if_none:0 }}
+            }
+        };
+        window.GOOGLE_MAPS_API_KEY = "AIzaSyBArDlSbRA1tND8xA6PUJOrhBt7nSsIf6s";
+    </script>
+
+    <!-- Google Maps -->
+    <script>
+        if (window.GOOGLE_MAPS_API_KEY) {
+            const script = document.createElement('script');
+            script.src = `https://maps.googleapis.com/maps/api/js?key=${window.GOOGLE_MAPS_API_KEY}`;
+            script.async = true;
+            script.defer = true;
+            document.head.appendChild(script);
+        }
+    </script>
+
+    <!-- Seu JavaScript geral -->
+    <script src="{% static 'script.js' %}"></script>
+
+    <!-- JavaScript responsável pelo mapa -->
+    <script src="{% static 'corridas/js/map.js' %}"></script>
+
+</body>
+
+</html>

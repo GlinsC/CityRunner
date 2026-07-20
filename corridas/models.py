@@ -7,6 +7,10 @@ class Corrida(models.Model):
     local_fim = models.CharField(max_length=100)
     distancia = models.FloatField()
     descricao = models.TextField()
+    origem_latitude = models.FloatField(null=True, blank=True)
+    origem_longitude = models.FloatField(null=True, blank=True)
+    destino_latitude = models.FloatField(null=True, blank=True)
+    destino_longitude = models.FloatField(null=True, blank=True)
 
     def __str__(self):
         return self.nome
