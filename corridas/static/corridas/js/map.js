@@ -9,46 +9,36 @@ window.CITYRUNNER_MAP_INIT = function (routeData) {
     }
     mapContainer.dataset.initialized = 'true';
 
-    if (typeof google === 'undefined' || !google.maps) {
-        mapContainer.innerHTML = '<div class="map-loading"><p>Adicione a chave da API do Google Maps para exibir o trajeto real.</p></div>';
+    if (typeof L === 'undefined') {
+        mapContainer.innerHTML = '<div class="map-loading"><p>Não foi possível carregar o mapa.</p></div>';
         return;
     }
 
-    const map = new google.maps.Map(mapContainer, {
-        center: routeData.origin,
-        zoom: 15,
-        mapTypeControl: false,
-        streetViewControl: false,
-        fullscreenControl: false
-    });
+    mapContainer.innerHTML = '';
 
-    const originMarker = new google.maps.Marker({ position: routeData.origin, map, title: 'Origem' });
-    const destinationMarker = new google.maps.Marker({ position: routeData.destination, map, title: 'Destino' });
+    const map = L.map(mapContainer, { zoomControl: true }).setView([routeData.origin.lat, routeData.origin.lng], 14);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
 
-    const bounds = new google.maps.LatLngBounds();
-    bounds.extend(routeData.origin);
-    bounds.extend(routeData.destination);
+    L.marker([routeData.origin.lat, routeData.origin.lng]).addTo(map).bindPopup('Origem');
+    L.marker([routeData.destination.lat, routeData.destination.lng]).addTo(map).bindPopup('Destino');
+
+    const bounds = L.latLngBounds([routeData.origin, routeData.destination]);
     map.fitBounds(bounds);
 
     const statusLabel = document.createElement('div');
     statusLabel.className = 'map-loading';
-    statusLabel.innerHTML = '<p>Pronto para começar. Clique em iniciar corrida.</p>';
+    statusLabel.innerHTML = '<p>Carregando a rota...</p>';
     mapContainer.appendChild(statusLabel);
 
-    const routeLine = new google.maps.Polyline({
-        path: [routeData.origin, routeData.destination],
-        geodesic: true,
-        strokeColor: '#62f2c2',
-        strokeOpacity: 0.35,
-        strokeWeight: 5,
-        map
-    });
-
     let watchId = null;
-    let routeProgress = [];
     let completed = false;
     let userMarker = null;
-    let currentPolyline = null;
+    let routeLine = null;
+    let routeCoordinates = [];
+    let isTracking = false;
 
     const updateStatus = (message) => {
         if (statusLabel) {
@@ -61,6 +51,7 @@ window.CITYRUNNER_MAP_INIT = function (routeData) {
             return;
         }
         completed = true;
+        isTracking = false;
         if (watchId !== null && navigator.geolocation) {
             navigator.geolocation.clearWatch(watchId);
         }
@@ -70,50 +61,90 @@ window.CITYRUNNER_MAP_INIT = function (routeData) {
         }
     };
 
-    const drawProgressPath = (points) => {
-        if (currentPolyline) {
-            currentPolyline.setMap(null);
+    const drawRoute = (coordinates) => {
+        if (routeLine) {
+            map.removeLayer(routeLine);
         }
 
-        if (points.length > 1) {
-            currentPolyline = new google.maps.Polyline({
-                path: points,
-                geodesic: true,
-                strokeColor: '#ffffff',
-                strokeOpacity: 0.95,
-                strokeWeight: 4,
-                map
-            });
+        if (coordinates.length) {
+            routeCoordinates = coordinates;
+            routeLine = L.polyline(coordinates, { color: '#2b7fff', weight: 6, opacity: 0.9 }).addTo(map);
+            map.fitBounds(routeLine.getBounds());
         }
     };
 
-    const startRun = () => {
+    const toMeters = (from, to) => {
+        const dx = from.lat - to.lat;
+        const dy = from.lng - to.lng;
+        return Math.hypot(dx, dy) * 111000;
+    };
+
+    const loadRoute = async () => {
+        updateStatus('Carregando rota...');
+
+        const startPoint = [routeData.origin.lng, routeData.origin.lat];
+        const endPoint = [routeData.destination.lng, routeData.destination.lat];
+
+        try {
+            const response = await fetch('https://api.openrouteservice.org/v2/directions/foot-walking/geojson', {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json, application/geo+json',
+                    'Content-Type': 'application/json',
+                    'Authorization': window.OPENROUTESERVICE_API_KEY
+                },
+                body: JSON.stringify({
+                    coordinates: [startPoint, endPoint],
+                    instructions: false,
+                    preference: 'recommended'
+                })
+            });
+
+            const data = await response.json();
+            const coordinates = data.features?.[0]?.geometry?.coordinates || [];
+            if (coordinates.length) {
+                const routeCoords = coordinates.map(([lng, lat]) => [lat, lng]);
+                drawRoute(routeCoords);
+                updateStatus('Rota carregada. Clique em iniciar corrida para acompanhar sua posição.');
+            } else {
+                updateStatus('Não foi possível carregar a rota.');
+            }
+        } catch (error) {
+            updateStatus('Não foi possível carregar a rota.');
+        }
+    };
+
+    const startRun = async () => {
         if (!navigator.geolocation) {
             updateStatus('Seu navegador não suporta geolocalização.');
             return;
         }
 
+        if (isTracking) {
+            return;
+        }
+
+        isTracking = true;
+
+        if (!routeCoordinates.length) {
+            await loadRoute();
+        }
+
         updateStatus('Rota iniciada. Siga até o destino.');
 
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition((position) => {
-                const initialPosition = {
-                    lat: position.coords.latitude,
-                    lng: position.coords.longitude
-                };
+        navigator.geolocation.getCurrentPosition((position) => {
+            const initialPosition = {
+                lat: position.coords.latitude,
+                lng: position.coords.longitude
+            };
 
-                routeProgress = [initialPosition];
-                userMarker = new google.maps.Marker({
-                    position: initialPosition,
-                    map,
-                    title: 'Você'
-                });
+            if (userMarker) {
+                map.removeLayer(userMarker);
+            }
 
-                map.setCenter(initialPosition);
-                drawProgressPath(routeProgress);
-                updateStatus('Sua posição inicial foi marcada. Continue andando.');
-            });
-        }
+            userMarker = L.marker([initialPosition.lat, initialPosition.lng]).addTo(map).bindPopup('Você');
+            map.setView([initialPosition.lat, initialPosition.lng], 16);
+        });
 
         watchId = navigator.geolocation.watchPosition(
             (position) => {
@@ -122,29 +153,19 @@ window.CITYRUNNER_MAP_INIT = function (routeData) {
                     lng: position.coords.longitude
                 };
 
-                routeProgress.push(userPosition);
-
                 if (userMarker) {
-                    userMarker.setMap(null);
+                    map.removeLayer(userMarker);
                 }
 
-                userMarker = new google.maps.Marker({
-                    position: userPosition,
-                    map,
-                    title: 'Você'
-                });
+                userMarker = L.marker([userPosition.lat, userPosition.lng]).addTo(map).bindPopup('Você');
+                map.panTo([userPosition.lat, userPosition.lng]);
 
-                const distanceToDestination = google.maps.geometry.spherical.computeDistanceBetween(
-                    new google.maps.LatLng(userPosition.lat, userPosition.lng),
-                    new google.maps.LatLng(routeData.destination.lat, routeData.destination.lng)
-                );
-
+                const distanceToDestination = toMeters(userPosition, routeData.destination);
                 if (distanceToDestination <= 50) {
                     finishRun();
                     return;
                 }
 
-                drawProgressPath(routeProgress.slice(-50));
                 updateStatus(`Você está a ${Math.round(distanceToDestination)} metros do fim da rota.`);
             },
             () => {
@@ -158,8 +179,10 @@ window.CITYRUNNER_MAP_INIT = function (routeData) {
         );
     };
 
+    loadRoute();
+
     const startButton = document.getElementById('start-run-btn');
     if (startButton) {
-        startButton.addEventListener('click', startRun, { once: true });
+        startButton.addEventListener('click', startRun);
     }
 };

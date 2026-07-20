@@ -42,13 +42,14 @@ class CorridaViewsTest(TestCase):
         response = self.client.get(reverse("corrida_detail", args=[self.corrida.id]))
         self.assertEqual(response.status_code, 200)
         self.assertNotContains(response, "SUA_CHAVE_AQUI")
-        self.assertContains(response, "window.GOOGLE_MAPS_API_KEY")
+        self.assertContains(response, "window.OPENROUTESERVICE_API_KEY")
 
-    def test_template_carrega_google_maps_com_geometria_e_inicializacao(self):
+    def test_template_carrega_leaflet_e_inicializacao(self):
         response = self.client.get(reverse("corrida_detail", args=[self.corrida.id]))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "libraries=geometry")
+        self.assertContains(response, "leaflet")
         self.assertContains(response, "CITYRUNNER_MAP_INIT")
+        self.assertContains(response, "OPENROUTESERVICE_API_KEY")
 
     def test_rota_raiz_redireciona_para_corridas(self):
         response = self.client.get('/')
