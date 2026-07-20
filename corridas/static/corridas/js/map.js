@@ -4,8 +4,6 @@ window.CITYRUNNER_MAP_INIT = function (routeData) {
         return;
     }
 
-    mapContainer.innerHTML = '<div class="map-loading"><p>Iniciando corrida e preparando o trajeto...</p></div>';
-
     if (typeof google === 'undefined' || !google.maps) {
         mapContainer.innerHTML = '<div class="map-loading"><p>Adicione a chave da API do Google Maps para exibir o trajeto real.</p></div>';
         return;
@@ -22,28 +20,21 @@ window.CITYRUNNER_MAP_INIT = function (routeData) {
     const originMarker = new google.maps.Marker({ position: routeData.origin, map, title: 'Origem' });
     const destinationMarker = new google.maps.Marker({ position: routeData.destination, map, title: 'Destino' });
 
-    const path = [routeData.origin, routeData.destination];
-    const polyline = new google.maps.Polyline({
-        path,
-        geodesic: true,
-        strokeColor: '#62f2c2',
-        strokeOpacity: 0.9,
-        strokeWeight: 5,
-        map
-    });
-
     const bounds = new google.maps.LatLngBounds();
     bounds.extend(routeData.origin);
     bounds.extend(routeData.destination);
     map.fitBounds(bounds);
 
+    const statusLabel = document.createElement('div');
+    statusLabel.className = 'map-loading';
+    statusLabel.innerHTML = '<p>Pronto para começar. Clique em iniciar corrida.</p>';
+    mapContainer.appendChild(statusLabel);
+
     let watchId = null;
     let routeProgress = [];
     let completed = false;
-    const statusLabel = document.createElement('div');
-    statusLabel.className = 'map-loading';
-    statusLabel.innerHTML = '<p>Preparando corrida...</p>';
-    mapContainer.appendChild(statusLabel);
+    let userMarker = null;
+    let currentPolyline = null;
 
     const updateStatus = (message) => {
         if (statusLabel) {
@@ -65,51 +56,62 @@ window.CITYRUNNER_MAP_INIT = function (routeData) {
         }
     };
 
-    const checkProgress = (position) => {
-        const userPosition = {
-            lat: position.coords.latitude,
-            lng: position.coords.longitude
-        };
-
-        routeProgress.push(userPosition);
-
-        const userMarker = new google.maps.Marker({
-            position: userPosition,
-            map,
-            title: 'Você'
-        });
-
-        const distanceToDestination = google.maps.geometry.spherical.computeDistanceBetween(
-            new google.maps.LatLng(userPosition.lat, userPosition.lng),
-            new google.maps.LatLng(routeData.destination.lat, routeData.destination.lng)
-        );
-
-        if (distanceToDestination <= 50) {
-            finishRun();
-            return;
+    const drawProgressPath = (points) => {
+        if (currentPolyline) {
+            currentPolyline.setMap(null);
         }
 
-        updateStatus(`Você está a ${Math.round(distanceToDestination)} metros do fim da rota.`);
-
-        if (routeProgress.length > 1) {
-            const recentPath = routeProgress.slice(-2);
-            const activePolyline = new google.maps.Polyline({
-                path: recentPath,
+        if (points.length > 1) {
+            currentPolyline = new google.maps.Polyline({
+                path: points,
                 geodesic: true,
                 strokeColor: '#ffffff',
-                strokeOpacity: 0.9,
+                strokeOpacity: 0.95,
                 strokeWeight: 4,
                 map
             });
-            activePolyline.setMap(map);
         }
     };
 
-    if (navigator.geolocation) {
-        updateStatus('Aguardando sua localização para começar...');
+    const startRun = () => {
+        if (!navigator.geolocation) {
+            updateStatus('Seu navegador não suporta geolocalização.');
+            return;
+        }
+
+        updateStatus('Rota iniciada. Siga até o destino.');
+
         watchId = navigator.geolocation.watchPosition(
             (position) => {
-                checkProgress(position);
+                const userPosition = {
+                    lat: position.coords.latitude,
+                    lng: position.coords.longitude
+                };
+
+                routeProgress.push(userPosition);
+
+                if (userMarker) {
+                    userMarker.setMap(null);
+                }
+
+                userMarker = new google.maps.Marker({
+                    position: userPosition,
+                    map,
+                    title: 'Você'
+                });
+
+                const distanceToDestination = google.maps.geometry.spherical.computeDistanceBetween(
+                    new google.maps.LatLng(userPosition.lat, userPosition.lng),
+                    new google.maps.LatLng(routeData.destination.lat, routeData.destination.lng)
+                );
+
+                if (distanceToDestination <= 50) {
+                    finishRun();
+                    return;
+                }
+
+                drawProgressPath(routeProgress.slice(-50));
+                updateStatus(`Você está a ${Math.round(distanceToDestination)} metros do fim da rota.`);
             },
             () => {
                 updateStatus('Não foi possível acessar a sua localização.');
@@ -120,7 +122,10 @@ window.CITYRUNNER_MAP_INIT = function (routeData) {
                 maximumAge: 0
             }
         );
-    } else {
-        updateStatus('Seu navegador não suporta geolocalização.');
+    };
+
+    const startButton = document.getElementById('start-run-btn');
+    if (startButton) {
+        startButton.addEventListener('click', startRun, { once: true });
     }
 };
