@@ -43,3 +43,8 @@ class CorridaViewsTest(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertNotContains(response, "SUA_CHAVE_AQUI")
         self.assertContains(response, "window.GOOGLE_MAPS_API_KEY")
+
+    def test_rota_raiz_redireciona_para_corridas(self):
+        response = self.client.get('/')
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, '/corridas/')
