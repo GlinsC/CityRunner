@@ -35,6 +35,15 @@ window.CITYRUNNER_MAP_INIT = function (routeData) {
     statusLabel.innerHTML = '<p>Pronto para começar. Clique em iniciar corrida.</p>';
     mapContainer.appendChild(statusLabel);
 
+    const routeLine = new google.maps.Polyline({
+        path: [routeData.origin, routeData.destination],
+        geodesic: true,
+        strokeColor: '#62f2c2',
+        strokeOpacity: 0.35,
+        strokeWeight: 5,
+        map
+    });
+
     let watchId = null;
     let routeProgress = [];
     let completed = false;
@@ -85,6 +94,26 @@ window.CITYRUNNER_MAP_INIT = function (routeData) {
         }
 
         updateStatus('Rota iniciada. Siga até o destino.');
+
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition((position) => {
+                const initialPosition = {
+                    lat: position.coords.latitude,
+                    lng: position.coords.longitude
+                };
+
+                routeProgress = [initialPosition];
+                userMarker = new google.maps.Marker({
+                    position: initialPosition,
+                    map,
+                    title: 'Você'
+                });
+
+                map.setCenter(initialPosition);
+                drawProgressPath(routeProgress);
+                updateStatus('Sua posição inicial foi marcada. Continue andando.');
+            });
+        }
 
         watchId = navigator.geolocation.watchPosition(
             (position) => {
