@@ -174,17 +174,10 @@ window.CITYRUNNER_MAP_INIT = function (routeData) {
     };
 
     const loadRealRouteFromUser = async (startPosition) => {
-        if (routeLine) {
-            map.removeLayer(routeLine);
-        }
-        routeCheckpoints.forEach(checkpoint => map.removeLayer(checkpoint));
-        routeCheckpoints = [];
-
-        updateStatus('Carregando rota em tempo real...');
-        const startPoint = [startPosition.lng, startPosition.lat];
-        const endPoint = [routeData.destination.lng, routeData.destination.lat];
-
         try {
+            const startPoint = [startPosition.lng, startPosition.lat];
+            const endPoint = [routeData.destination.lng, routeData.destination.lat];
+
             const response = await fetch('https://api.openrouteservice.org/v2/directions/foot-walking/geojson', {
                 method: 'POST',
                 headers: {
@@ -199,23 +192,52 @@ window.CITYRUNNER_MAP_INIT = function (routeData) {
                 })
             });
 
+            if (!response.ok) {
+                throw new Error(`API Error: ${response.status}`);
+            }
+
             const data = await response.json();
-            if (data.features && data.features[0] && data.features[0].geometry) {
-                const coordinates = data.features[0].geometry.coordinates || [];
-                if (coordinates.length) {
-                    const routeCoords = coordinates.map(([lng, lat]) => [lat, lng]);
-                    drawRoute(routeCoords, {
-                        color: '#3b82f6',
-                        weight: 8,
-                        opacity: 0.9
-                    });
-                    setTimeout(() => {
-                        updateStatus('Rota carregada! Siga o trajeto azul até o destino.');
-                    }, 500);
+
+            if (data.features && data.features[0] && data.features[0].geometry && data.features[0].geometry.coordinates) {
+                const coordinates = data.features[0].geometry.coordinates;
+                const routeCoords = coordinates.map(([lng, lat]) => [lat, lng]);
+
+                if (routeCoords.length > 0) {
+                    if (routeLine) {
+                        map.removeLayer(routeLine);
+                    }
+                    routeCheckpoints.forEach(checkpoint => map.removeLayer(checkpoint));
+                    routeCheckpoints = [];
+
+                    routeCoordinates = routeCoords;
+                    routeLine = L.polyline(routeCoords, {
+                        color: '#ef4444',
+                        weight: 9,
+                        opacity: 0.95,
+                        lineCap: 'round',
+                        lineJoin: 'round'
+                    }).addTo(map);
+
+                    const step = Math.max(1, Math.floor(routeCoords.length / 20));
+                    for (let i = 0; i < routeCoords.length; i += step) {
+                        const coord = routeCoords[i];
+                        const checkpoint = L.circleMarker(coord, {
+                            radius: 6,
+                            fillColor: '#dc2626',
+                            color: '#991b1b',
+                            weight: 2,
+                            opacity: 0.8,
+                            fillOpacity: 0.7
+                        }).addTo(map);
+                        routeCheckpoints.push(checkpoint);
+                    }
+
+                    map.fitBounds(routeLine.getBounds());
+                    updateStatus('Rota real carregada! Siga o trajeto vermelho até o destino.');
                     return true;
                 }
             }
-            updateStatus('Não foi possível encontrar uma rota. Verifique sua posição.');
+            updateStatus('Nenhuma rota encontrada. Verifique sua posição.');
             return false;
         } catch (error) {
             console.error('Erro ao carregar rota:', error);
@@ -235,10 +257,16 @@ window.CITYRUNNER_MAP_INIT = function (routeData) {
         }
 
         isTracking = true;
-        updateStatus('Buscando sua posição...');
+        updateStatus('Buscando sua localização...');
         startTimer();
         distanceMeters = 0;
         lastPosition = null;
+
+        if (routeLine) {
+            map.removeLayer(routeLine);
+        }
+        routeCheckpoints.forEach(checkpoint => map.removeLayer(checkpoint));
+        routeCheckpoints = [];
 
         navigator.geolocation.getCurrentPosition(
             async (position) => {
@@ -255,7 +283,9 @@ window.CITYRUNNER_MAP_INIT = function (routeData) {
                 userMarker = L.marker([initialPosition.lat, initialPosition.lng], { icon: userIcon }).addTo(map).bindPopup('Você');
                 map.flyTo([initialPosition.lat, initialPosition.lng], 17, { duration: 1.2 });
 
+                updateStatus('Carregando rota em tempo real...');
                 const routeLoaded = await loadRealRouteFromUser(initialPosition);
+
                 if (!routeLoaded) {
                     isTracking = false;
                     stopTimer();
@@ -263,11 +293,12 @@ window.CITYRUNNER_MAP_INIT = function (routeData) {
                 }
             },
             (error) => {
-                updateStatus('Não foi possível acessar sua localização.');
+                console.error('Erro de geolocalização:', error);
+                updateStatus('Não foi possível acessar sua localização. Ative o GPS.');
                 isTracking = false;
                 stopTimer();
             },
-            { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+            { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
         );
 
         watchId = navigator.geolocation.watchPosition(
@@ -279,7 +310,7 @@ window.CITYRUNNER_MAP_INIT = function (routeData) {
 
                 if (lastPosition) {
                     const segmentMeters = toMeters(lastPosition, userPosition);
-                    if (segmentMeters < 100) {
+                    if (segmentMeters < 100 && segmentMeters > 0) {
                         distanceMeters += segmentMeters;
                     }
                 }
@@ -301,7 +332,7 @@ window.CITYRUNNER_MAP_INIT = function (routeData) {
                 updateStatus(`Tempo: ${formatTime(elapsedSeconds)} • ${Math.round(distanceMeters / 1000 * 10) / 10} km • ${Math.round(distanceToDestination)} m para o fim`);
             },
             (error) => {
-                console.warn('Erro de geolocalização:', error);
+                console.warn('Erro no rastreamento:', error);
             },
             {
                 enableHighAccuracy: true,
