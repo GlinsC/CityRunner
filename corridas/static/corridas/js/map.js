@@ -4,6 +4,11 @@ window.CITYRUNNER_MAP_INIT = function (routeData) {
         return;
     }
 
+    if (mapContainer.dataset.initialized === 'true') {
+        return;
+    }
+    mapContainer.dataset.initialized = 'true';
+
     if (typeof google === 'undefined' || !google.maps) {
         mapContainer.innerHTML = '<div class="map-loading"><p>Adicione a chave da API do Google Maps para exibir o trajeto real.</p></div>';
         return;
