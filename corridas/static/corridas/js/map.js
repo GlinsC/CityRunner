@@ -116,7 +116,7 @@ window.CITYRUNNER_MAP_INIT = function (routeData) {
         }
     };
 
-    const drawRoute = (coordinates) => {
+    const drawRoute = (coordinates, options = {}) => {
         if (routeLine) {
             map.removeLayer(routeLine);
         }
@@ -129,7 +129,8 @@ window.CITYRUNNER_MAP_INIT = function (routeData) {
                 opacity: 0.95,
                 lineCap: 'round',
                 lineJoin: 'round',
-                dashArray: '8 8'
+                dashArray: '8 8',
+                ...options
             }).addTo(map);
             map.fitBounds(routeLine.getBounds());
         }
@@ -146,10 +147,21 @@ window.CITYRUNNER_MAP_INIT = function (routeData) {
             [routeData.origin.lat, routeData.origin.lng],
             [routeData.destination.lat, routeData.destination.lng]
         ];
-        drawRoute(previewPath);
+        drawRoute(previewPath, {
+            color: '#f59e0b',
+            weight: 6,
+            opacity: 0.7,
+            dashArray: '6 6'
+        });
         updateStatus('Carregando rota...');
+    };
 
-        const startPoint = [routeData.origin.lng, routeData.origin.lat];
+    const loadRealRouteFromUser = async (startPosition) => {
+        if (routeLine) {
+            map.removeLayer(routeLine);
+        }
+
+        const startPoint = [startPosition.lng, startPosition.lat];
         const endPoint = [routeData.destination.lng, routeData.destination.lat];
 
         try {
@@ -171,14 +183,18 @@ window.CITYRUNNER_MAP_INIT = function (routeData) {
             const coordinates = data.features?.[0]?.geometry?.coordinates || [];
             if (coordinates.length) {
                 const routeCoords = coordinates.map(([lng, lat]) => [lat, lng]);
-                drawRoute(routeCoords);
-                updateStatus('Rota carregada. Clique em iniciar corrida para acompanhar sua posição.');
+                drawRoute(routeCoords, {
+                    color: '#22c55e',
+                    weight: 7,
+                    opacity: 0.95,
+                    dashArray: ''
+                });
+                updateStatus('Rota real iniciada. Siga o trajeto até o destino.');
             } else {
-                drawRoute(previewPath);
-                updateStatus('Rota carregada. Clique em iniciar corrida para acompanhar sua posição.');
+                updateStatus('Não foi possível encontrar uma rota real a partir da sua posição.');
             }
         } catch (error) {
-            updateStatus('Não foi possível carregar a rota.');
+            updateStatus('Não foi possível carregar a rota real.');
         }
     };
 
@@ -198,12 +214,12 @@ window.CITYRUNNER_MAP_INIT = function (routeData) {
             await loadRoute();
         }
 
-        updateStatus('Rota iniciada. Siga até o destino.');
+        updateStatus('Buscando sua posição e montando a rota real...');
         startTimer();
         distanceMeters = 0;
         lastPosition = null;
 
-        navigator.geolocation.getCurrentPosition((position) => {
+        navigator.geolocation.getCurrentPosition(async (position) => {
             const initialPosition = {
                 lat: position.coords.latitude,
                 lng: position.coords.longitude
@@ -214,7 +230,10 @@ window.CITYRUNNER_MAP_INIT = function (routeData) {
             }
 
             userMarker = L.marker([initialPosition.lat, initialPosition.lng], { icon: userIcon }).addTo(map).bindPopup('Você');
-            map.setView([initialPosition.lat, initialPosition.lng], 16);
+            map.flyTo([initialPosition.lat, initialPosition.lng], 17, { duration: 1.2 });
+
+            await loadRealRouteFromUser(initialPosition);
+            updateStatus('Rota iniciada. Siga até o destino.');
         });
 
         watchId = navigator.geolocation.watchPosition(
