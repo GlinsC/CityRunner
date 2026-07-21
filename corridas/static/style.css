@@ -217,6 +217,25 @@ h1 { font-size: clamp(1.9rem, 3vw, 2.8rem); }
 
     animation: slideUp .3s ease;
 }
+.map-marker-wrapper {
+    background: transparent;
+    border: none;
+}
+.map-marker {
+    width: 52px;
+    height: 52px;
+    display: grid;
+    place-items: center;
+    font-size: 1.25rem;
+    color: #ffffff;
+    border-radius: 50%;
+    border: 3px solid rgba(255, 255, 255, 0.9);
+    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.28);
+    background-clip: padding-box;
+}
+.map-marker.start-icon { background: linear-gradient(135deg, #ff7a1a, #ff4d4d); }
+.map-marker.finish-icon { background: linear-gradient(135deg, #2dd4bf, #22c55e); }
+.map-marker.user-icon { background: linear-gradient(135deg, #60a5fa, #2563eb); }
 .map-status p {
     margin: 0;
 

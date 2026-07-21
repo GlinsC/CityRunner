@@ -26,9 +26,6 @@ window.CITYRUNNER_MAP_INIT = function (routeData) {
         setTimeout(() => map.invalidateSize(), 100);
     });
 
-    L.marker([routeData.origin.lat, routeData.origin.lng]).addTo(map).bindPopup('Origem');
-    L.marker([routeData.destination.lat, routeData.destination.lng]).addTo(map).bindPopup('Destino');
-
     const bounds = L.latLngBounds([routeData.origin, routeData.destination]);
     map.fitBounds(bounds);
 
