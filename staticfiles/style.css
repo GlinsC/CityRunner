@@ -159,17 +159,34 @@ h1 { font-size: clamp(1.9rem, 3vw, 2.8rem); }
     min-height: 360px;
 }
 .map-loading {
-    text-align: center;
-    max-width: 320px;
-    color: var(--muted);
+
     position: absolute;
-    inset: 0;
-    display: grid;
-    place-items: center;
-    pointer-events: none;
-    background: rgba(7, 17, 31, 0.78);
-    z-index: 500;
-    padding: 18px;
+
+    left: 50%;
+    bottom: 18px;
+
+    transform: translateX(-50%);
+
+    width: calc(100% - 40px);
+    max-width: 520px;
+
+    padding: 14px 20px;
+
+    background: rgba(18,25,37,.92);
+
+    border-radius: 14px;
+
+    backdrop-filter: blur(12px);
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    color: white;
+
+    z-index: 900;
+
+    transition: .3s;
 }
 .map-status {
     position: absolute;
