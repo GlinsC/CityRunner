@@ -6,8 +6,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     startButton.addEventListener('click', () => {
-        if (window.CITYRUNNER_MAP_INIT) {
-            window.CITYRUNNER_MAP_INIT(window.CITYRUNNER_ROUTE);
+        if (window.CITYRUNNER_MAP_INIT && typeof L !== 'undefined') {
+            // Leaflet map initializes and handles the start button on the route page.
             return;
         }
 

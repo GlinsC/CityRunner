@@ -22,6 +22,10 @@ window.CITYRUNNER_MAP_INIT = function (routeData) {
         attribution: '&copy; OpenStreetMap contributors'
     }).addTo(map);
 
+    map.whenReady(() => {
+        setTimeout(() => map.invalidateSize(), 100);
+    });
+
     L.marker([routeData.origin.lat, routeData.origin.lng]).addTo(map).bindPopup('Origem');
     L.marker([routeData.destination.lat, routeData.destination.lng]).addTo(map).bindPopup('Destino');
 
@@ -159,7 +163,49 @@ window.CITYRUNNER_MAP_INIT = function (routeData) {
         return Math.hypot(dx, dy) * 111000;
     };
 
+    const fetchRoute = async (startPoint, endPoint) => {
+        const osrmUrl = `https://router.project-osrm.org/route/v1/foot/${startPoint[0]},${startPoint[1]};${endPoint[0]},${endPoint[1]}?overview=full&geometries=geojson`;
+        const response = await fetch(osrmUrl, {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            const text = await response.text();
+            throw new Error(`OSRM Error ${response.status}: ${text || response.statusText}`);
+        }
+
+        const data = await response.json();
+        const coordinates = data?.routes?.[0]?.geometry?.coordinates;
+        if (!coordinates || !coordinates.length) {
+            throw new Error('Rota não encontrada.');
+        }
+
+        return coordinates.map(([lng, lat]) => [lat, lng]);
+    };
+
     const loadRoute = async () => {
+        updateStatus('Calculando rota segura para caminhada...');
+        try {
+            const routeCoords = await fetchRoute(
+                [routeData.origin.lng, routeData.origin.lat],
+                [routeData.destination.lng, routeData.destination.lat]
+            );
+
+            drawRoute(routeCoords, {
+                color: '#f59e0b',
+                weight: 8,
+                opacity: 0.8
+            });
+            updateStatus('Rota de caminhada carregada. Clique em Iniciar corrida para seguir o trajeto.');
+            return;
+        } catch (error) {
+            console.warn('Não foi possível carregar a rota inicial:', error);
+            updateStatus(`Erro ao calcular rota: ${error.message}`);
+        }
+
         const previewPath = [
             [routeData.origin.lat, routeData.origin.lng],
             [routeData.destination.lat, routeData.destination.lng]
@@ -170,73 +216,50 @@ window.CITYRUNNER_MAP_INIT = function (routeData) {
             opacity: 0.7,
             dashArray: '6 6'
         });
-        updateStatus('Carregando rota...');
+        updateStatus('Rota inicial indisponível. Clique em Iniciar corrida para buscar o trajeto a partir da sua localização.');
     };
 
     const loadRealRouteFromUser = async (startPosition) => {
         try {
             const startPoint = [startPosition.lng, startPosition.lat];
             const endPoint = [routeData.destination.lng, routeData.destination.lat];
+            const routeCoords = await fetchRoute(startPoint, endPoint);
 
-            const response = await fetch('https://api.openrouteservice.org/v2/directions/foot-walking/geojson', {
-                method: 'POST',
-                headers: {
-                    'Accept': 'application/json, application/geo+json',
-                    'Content-Type': 'application/json',
-                    'Authorization': window.OPENROUTESERVICE_API_KEY
-                },
-                body: JSON.stringify({
-                    coordinates: [startPoint, endPoint],
-                    instructions: false,
-                    preference: 'recommended'
-                })
-            });
-
-            if (!response.ok) {
-                throw new Error(`API Error: ${response.status}`);
-            }
-
-            const data = await response.json();
-
-            if (data.features && data.features[0] && data.features[0].geometry && data.features[0].geometry.coordinates) {
-                const coordinates = data.features[0].geometry.coordinates;
-                const routeCoords = coordinates.map(([lng, lat]) => [lat, lng]);
-
-                if (routeCoords.length > 0) {
-                    if (routeLine) {
-                        map.removeLayer(routeLine);
-                    }
-                    routeCheckpoints.forEach(checkpoint => map.removeLayer(checkpoint));
-                    routeCheckpoints = [];
-
-                    routeCoordinates = routeCoords;
-                    routeLine = L.polyline(routeCoords, {
-                        color: '#ef4444',
-                        weight: 9,
-                        opacity: 0.95,
-                        lineCap: 'round',
-                        lineJoin: 'round'
-                    }).addTo(map);
-
-                    const step = Math.max(1, Math.floor(routeCoords.length / 20));
-                    for (let i = 0; i < routeCoords.length; i += step) {
-                        const coord = routeCoords[i];
-                        const checkpoint = L.circleMarker(coord, {
-                            radius: 6,
-                            fillColor: '#dc2626',
-                            color: '#991b1b',
-                            weight: 2,
-                            opacity: 0.8,
-                            fillOpacity: 0.7
-                        }).addTo(map);
-                        routeCheckpoints.push(checkpoint);
-                    }
-
-                    map.fitBounds(routeLine.getBounds());
-                    updateStatus('Rota real carregada! Siga o trajeto vermelho até o destino.');
-                    return true;
+            if (routeCoords.length > 0) {
+                if (routeLine) {
+                    map.removeLayer(routeLine);
                 }
+                routeCheckpoints.forEach(checkpoint => map.removeLayer(checkpoint));
+                routeCheckpoints = [];
+
+                routeCoordinates = routeCoords;
+                routeLine = L.polyline(routeCoords, {
+                    color: '#ef4444',
+                    weight: 9,
+                    opacity: 0.95,
+                    lineCap: 'round',
+                    lineJoin: 'round'
+                }).addTo(map);
+
+                const step = Math.max(1, Math.floor(routeCoords.length / 20));
+                for (let i = 0; i < routeCoords.length; i += step) {
+                    const coord = routeCoords[i];
+                    const checkpoint = L.circleMarker(coord, {
+                        radius: 6,
+                        fillColor: '#dc2626',
+                        color: '#991b1b',
+                        weight: 2,
+                        opacity: 0.8,
+                        fillOpacity: 0.7
+                    }).addTo(map);
+                    routeCheckpoints.push(checkpoint);
+                }
+
+                map.fitBounds(routeLine.getBounds());
+                updateStatus('Rota real carregada! Siga o trajeto vermelho até o destino.');
+                return true;
             }
+
             updateStatus('Nenhuma rota encontrada. Verifique sua posição.');
             return false;
         } catch (error) {
@@ -261,12 +284,6 @@ window.CITYRUNNER_MAP_INIT = function (routeData) {
         startTimer();
         distanceMeters = 0;
         lastPosition = null;
-
-        if (routeLine) {
-            map.removeLayer(routeLine);
-        }
-        routeCheckpoints.forEach(checkpoint => map.removeLayer(checkpoint));
-        routeCheckpoints = [];
 
         navigator.geolocation.getCurrentPosition(
             async (position) => {
