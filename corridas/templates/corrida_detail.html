@@ -89,23 +89,54 @@
                 </ul>
 
                 <div class="comments-box">
+                    <h4>Ranking de pace</h4>
+                    {% if rankings %}
+                        {% for item in rankings %}
+                            <div class="comment-item">
+                                <p>{{ item.usuario.nome }} • {{ item.pace|floatformat:2 }} min/km</p>
+                                <span>#{{ forloop.counter }}</span>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="muted">Ainda não há registros de pace para esta corrida.</p>
+                    {% endif %}
+                </div>
+
+                <div class="comments-box">
 
                     <h4>Comentários</h4>
 
-                    {% for comentario in comentarios %}
+                    <form id="comment-form" class="comment-form-card">
+                        {% csrf_token %}
+                        <textarea name="comentario" rows="3" placeholder="Escreva seu comentário sobre a corrida" required></textarea>
+                        <select name="avaliacao" required>
+                            <option value="">Selecione uma avaliação</option>
+                            <option value="1">1 ★</option>
+                            <option value="2">2 ★</option>
+                            <option value="3">3 ★</option>
+                            <option value="4">4 ★</option>
+                            <option value="5">5 ★</option>
+                        </select>
+                        <button type="submit" class="primary-btn">Adicionar comentário</button>
+                    </form>
 
-                        <div class="comment-item">
-                            <p>{{ comentario.comentario }}</p>
-                            <span>{{ comentario.avaliacao }} ★</span>
-                        </div>
-
-                    {% empty %}
-
-                        <p class="muted">
-                            Ainda não há comentários para esta corrida.
-                        </p>
-
-                    {% endfor %}
+                    <div id="comments-list" class="comments-list">
+                        {% for comentario in comentarios %}
+                            <div class="comment-item">
+                                <div>
+                                    <p>{{ comentario.comentario }}</p>
+                                    {% if comentario.usuarios.all %}
+                                        <small>{{ comentario.usuarios.first.usuario.nome }}</small>
+                                    {% endif %}
+                                </div>
+                                <span>{{ comentario.avaliacao }} ★</span>
+                            </div>
+                        {% empty %}
+                            <p class="muted">
+                                Ainda não há comentários para esta corrida.
+                            </p>
+                        {% endfor %}
+                    </div>
 
                 </div>
 
@@ -140,6 +171,68 @@
         document.addEventListener('DOMContentLoaded', function () {
             if (window.CITYRUNNER_ROUTE && window.CITYRUNNER_MAP_INIT) {
                 window.CITYRUNNER_MAP_INIT(window.CITYRUNNER_ROUTE);
+            }
+
+            const commentForm = document.getElementById('comment-form');
+            const commentsList = document.getElementById('comments-list');
+
+            if (commentForm) {
+                commentForm.addEventListener('submit', async function (event) {
+                    event.preventDefault();
+
+                    const token = window.localStorage.getItem('cityrunner_token');
+                    if (!token) {
+                        alert('Você precisa estar logado para comentar.');
+                        window.location.href = '{% url "login" %}?next={{ request.path }}';
+                        return;
+                    }
+
+                    const formData = new FormData(commentForm);
+                    const payload = {
+                        comentario: formData.get('comentario'),
+                        avaliacao: formData.get('avaliacao')
+                    };
+
+                    try {
+                        const response = await fetch('{% url "comentario_corrida_post" corrida.id %}', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${token}`
+                            },
+                            body: JSON.stringify(payload)
+                        });
+
+                        const data = await response.json();
+                        if (!response.ok) {
+                            throw new Error(data.error || 'Não foi possível enviar o comentário.');
+                        }
+
+                        const item = document.createElement('div');
+                        item.className = 'comment-item';
+                        const userName = payload.userName || 'Você';
+                        item.innerHTML = `<div><p>${payload.comentario}</p><small>${userName}</small></div><span>${payload.avaliacao} ★</span>`;
+                        commentsList.prepend(item);
+                        commentForm.reset();
+                    } catch (error) {
+                        alert(error.message);
+                    }
+                });
+            }
+        });
+
+        window.addEventListener('load', function () {
+            const sessionToken = window.localStorage.getItem('cityrunner_token');
+            if (sessionToken) {
+                try {
+                    const payload = JSON.parse(atob(sessionToken.split('.')[1] || 'e30='));
+                    const expiresAt = payload.exp * 1000;
+                    if (Date.now() > expiresAt) {
+                        window.localStorage.removeItem('cityrunner_token');
+                    }
+                } catch (error) {
+                    window.localStorage.removeItem('cityrunner_token');
+                }
             }
         });
     </script>

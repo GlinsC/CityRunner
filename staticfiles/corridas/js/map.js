@@ -44,7 +44,7 @@ window.CITYRUNNER_MAP_INIT = function (routeData) {
     L.marker([routeData.destination.lat, routeData.destination.lng], { icon: finishIcon }).addTo(map).bindPopup('Destino');
 
     const statusLabel = document.createElement('div');
-    statusLabel.className = 'map-status';
+    statusLabel.className = 'map-loading map-status';
     statusLabel.innerHTML = '<p>Carregando a rota...</p>';
     mapContainer.appendChild(statusLabel);
 
@@ -100,6 +100,32 @@ window.CITYRUNNER_MAP_INIT = function (routeData) {
         }, 1000);
     };
 
+    const saveRunPace = async (paceValue, corridaId, usuarioId) => {
+        try {
+            const payload = {
+                corrida_id: corridaId,
+                usuario_id: usuarioId,
+                pace: paceValue,
+            };
+
+            const token = window.localStorage.getItem('cityrunner_token');
+            const response = await fetch('/corridas/rankings/pace/post/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                console.warn('Não foi possível salvar o pace no ranking.', await response.text());
+            }
+        } catch (error) {
+            console.warn('Erro ao salvar pace no ranking:', error);
+        }
+    };
+
     const finishRun = () => {
         if (completed) {
             return;
@@ -111,10 +137,20 @@ window.CITYRUNNER_MAP_INIT = function (routeData) {
             navigator.geolocation.clearWatch(watchId);
         }
         const distanceKm = Math.round((distanceMeters / 1000) * 10) / 10;
+        const paceValue = distanceMeters > 0 ? (elapsedSeconds / 60) / (distanceMeters / 1000) : null;
         const pace = formatPace(elapsedSeconds, distanceMeters);
         updateStatus(`Parabéns! Você concluiu a corrida em ${formatTime(elapsedSeconds)}. Pace: ${pace}.`);
+        if (routeData?.id) {
+            saveRunPace(paceValue, routeData.id, routeData.userId || null);
+        }
         if (typeof window !== 'undefined' && window.dispatchEvent) {
-            window.dispatchEvent(new CustomEvent('cityrunner:run-finished'));
+            window.dispatchEvent(new CustomEvent('cityrunner:run-finished', {
+                detail: {
+                    pace: paceValue,
+                    corridaId: routeData?.id,
+                    userId: routeData?.userId || null,
+                }
+            }));
         }
     };
 
@@ -363,4 +399,3 @@ window.CITYRUNNER_MAP_INIT = function (routeData) {
         startButton.addEventListener('click', startRun);
     }
 };
-

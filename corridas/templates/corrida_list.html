@@ -19,12 +19,29 @@
                 <p class="hero-text">Explore rotas, acompanhe o trajeto e comece sua jornada com uma experiência moderna e intuitiva.</p>
             </div>
             <div class="hero-pill">⚡ Mapa interativo • Rotas em tempo real</div>
+            <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top: 12px;">
+                {% if request.session.usuario_nome %}
+                    <a href="{% url 'logout' %}" class="primary-btn">Sair</a>
+                {% else %}
+                    <a href="{% url 'login' %}" class="primary-btn">Entrar</a>
+                    <a href="{% url 'register' %}" class="ghost-link">Criar conta</a>
+                {% endif %}
+            </div>
         </header>
 
         <section class="stats-grid">
             <article class="stat-card accent">
                 <span class="stat-number">{{ corridas.count }}</span>
                 <span class="stat-label">Corridas disponíveis</span>
+            </article>
+            <article class="stat-card">
+                {% if request.session.usuario_nome %}
+                    <span class="stat-number">{{ request.session.usuario_nome }}</span>
+                    <span class="stat-label">Usuário logado</span>
+                {% else %}
+                    <span class="stat-number">Visitante</span>
+                    <span class="stat-label">Entre para salvar seu pace</span>
+                {% endif %}
             </article>
             <article class="stat-card">
                 <span class="stat-number">24/7</span>
@@ -71,6 +88,16 @@
         </section>
     </div>
 
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const token = window.localStorage.getItem('cityrunner_token');
+            if (!token) return;
+            const payload = JSON.parse(atob(token.split('.')[1] || 'e30='));
+            if (Date.now() > (payload.exp || 0) * 1000) {
+                window.localStorage.removeItem('cityrunner_token');
+            }
+        });
+    </script>
     <script src="{% static 'script.js' %}"></script>
 </body>
 </html>

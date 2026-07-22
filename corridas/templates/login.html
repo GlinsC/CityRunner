@@ -1,0 +1,49 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Entrar | CityRunner</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'style.css' %}">
+</head>
+<body>
+    <div class="page-shell">
+        <div class="hero-card" style="max-width: 460px; margin: 40px auto; display: block;">
+            <p class="eyebrow">Acesso</p>
+            <h1>Entrar</h1>
+            <p class="hero-text">Acesse sua conta para salvar seus paces e comentários.</p>
+
+            {% if messages %}
+                {% for message in messages %}
+                    <p style="margin-bottom: 12px; color: {% if message.tags == 'error' %}#ff8c8c{% else %}#62f2c2{% endif %};">{{ message }}</p>
+                {% endfor %}
+            {% endif %}
+
+            <form method="post" style="display: grid; gap: 12px; margin-top: 16px;">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{{ next|default:'/corridas/' }}">
+                <input type="email" name="email" placeholder="E-mail" required style="padding: 12px 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.06); color: white;">
+                <input type="password" name="senha" placeholder="Senha" required style="padding: 12px 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.06); color: white;">
+                <button type="submit" class="primary-btn">Entrar</button>
+            </form>
+
+            <p style="margin-top: 14px; color: var(--muted);">
+                Ainda não tem conta? <a href="{% url 'register' %}" class="ghost-link">Cadastre-se</a>
+            </p>
+        </div>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const token = "{{ token|default:''|escapejs }}";
+            if (token) {
+                window.localStorage.setItem('cityrunner_token', token);
+                window.location.href = "{{ redirect_to|default:'/corridas/'|escapejs }}";
+            }
+        });
+    </script>
+</body>
+</html>
