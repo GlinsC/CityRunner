@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 
 import os
 from pathlib import Path
+from urllib.parse import quote
 
 import dj_database_url
 
@@ -92,21 +93,29 @@ DATABASE_URL = os.environ.get('DATABASE_URL')
 
 if DATABASE_URL:
     try:
-        DATABASES = {
-            'default': dj_database_url.config(
-                default=DATABASE_URL,
-                conn_max_age=600,
-                ssl_require=True,
-            )
-        }
+        parsed_url = dj_database_url.parse(DATABASE_URL)
+        if parsed_url.get('ENGINE') and parsed_url.get('NAME'):
+            DATABASES = {'default': parsed_url}
+        else:
+            raise ValueError('URL de banco inválida')
     except Exception:
-        DATABASES = {
-            'default': dj_database_url.config(
-                default=f'sqlite:///{BASE_DIR / "db.sqlite3"}',
-                conn_max_age=600,
-                ssl_require=False,
-            )
-        }
+        try:
+            safe_url = DATABASE_URL.replace('postgres://', 'postgresql://')
+            DATABASES = {
+                'default': dj_database_url.config(
+                    default=safe_url,
+                    conn_max_age=600,
+                    ssl_require=True,
+                )
+            }
+        except Exception:
+            DATABASES = {
+                'default': dj_database_url.config(
+                    default=f'sqlite:///{BASE_DIR / "db.sqlite3"}',
+                    conn_max_age=600,
+                    ssl_require=False,
+                )
+            }
 else:
     DATABASES = {
         'default': dj_database_url.config(
