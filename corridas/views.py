@@ -104,6 +104,7 @@ def corrida_api_list(request):
 
 
 @csrf_exempt
+@require_auth
 def corrida_post(request):
     if request.method == "POST":
         data = json.loads(request.body)
@@ -158,6 +159,7 @@ def corrida_detail_api(request, corrida_id):
 
 
 @csrf_exempt
+@require_auth
 def corrida_delete(request, corrida_id):
     corrida = get_object_or_404(Corrida, id=corrida_id)
     corrida.delete()
@@ -214,6 +216,7 @@ def comentario_corrida_post(request, corrida_id):
     }, status=201)
 
 @csrf_exempt
+@require_auth
 def comentario_corrida_delete(request, corrida_id, comentario_id):
     comentario = get_object_or_404(ComentarioCorrida, id=comentario_id, corrida_id=corrida_id)
     comentario.delete()

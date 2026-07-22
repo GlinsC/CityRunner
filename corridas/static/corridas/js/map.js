@@ -119,7 +119,14 @@ window.CITYRUNNER_MAP_INIT = function (routeData) {
             });
 
             if (!response.ok) {
-                console.warn('Não foi possível salvar o pace no ranking.', await response.text());
+                const errorText = await response.text();
+                console.warn('Não foi possível salvar o pace no ranking.', errorText);
+                return;
+            }
+
+            const data = await response.json();
+            if (data?.pace !== undefined) {
+                console.info('Pace salvo com sucesso:', data.pace);
             }
         } catch (error) {
             console.warn('Erro ao salvar pace no ranking:', error);

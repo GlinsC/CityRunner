@@ -50,6 +50,25 @@ class CorridaViewsTest(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()[0]["nome"], self.corrida.nome)
 
+    def test_criar_corrida_exige_autenticacao(self):
+        unauthenticated_client = self.client_class()
+        response = unauthenticated_client.post(
+            reverse("corrida_post"),
+            data=json.dumps({
+                "nome": "Nova corrida",
+                "local_inicio": "Centro",
+                "local_fim": "Parque",
+                "distancia": 8.0,
+                "descricao": "Corrida protegida",
+                "origem_latitude": 0,
+                "origem_longitude": 0,
+                "destino_latitude": 1,
+                "destino_longitude": 1,
+            }),
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 401)
+
     def test_detalhe_da_corrida_referencia_asset_do_mapa(self):
         response = self.client.get(reverse("corrida_detail", args=[self.corrida.id]))
         self.assertEqual(response.status_code, 200)

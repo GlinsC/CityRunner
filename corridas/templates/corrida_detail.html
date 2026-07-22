@@ -189,10 +189,9 @@
 
                     const formData = new FormData(commentForm);
                     const payload = {
-                        comentario: formData.get('comentario'),
-                        avaliacao: formData.get('avaliacao')
-                    };
-
+                            comentario: formData.get('comentario'),
+                            avaliacao: formData.get('avaliacao')
+                        };
                     try {
                         const response = await fetch('{% url "comentario_corrida_post" corrida.id %}', {
                             method: 'POST',
@@ -210,7 +209,7 @@
 
                         const item = document.createElement('div');
                         item.className = 'comment-item';
-                        const userName = payload.userName || 'Você';
+                        const userName = data.userName || 'Você';
                         item.innerHTML = `<div><p>${payload.comentario}</p><small>${userName}</small></div><span>${payload.avaliacao} ★</span>`;
                         commentsList.prepend(item);
                         commentForm.reset();
