@@ -220,16 +220,41 @@
             }
         });
 
+        function decodeJwtPayload(token) {
+            if (!token) {
+                return null;
+            }
+
+            try {
+                const payloadSegment = token.split('.')[1];
+                if (!payloadSegment) {
+                    return null;
+                }
+
+                const normalized = payloadSegment.replace(/-/g, '+').replace(/_/g, '/');
+                const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, '=');
+                const decoded = atob(padded);
+                const json = decodeURIComponent(
+                    Array.from(decoded).map((char) => `%${char.charCodeAt(0).toString(16).padStart(2, '0')}`).join('')
+                );
+                return JSON.parse(json);
+            } catch (error) {
+                console.warn('Token inválido:', error);
+                return null;
+            }
+        }
+
         window.addEventListener('load', function () {
             const sessionToken = window.localStorage.getItem('cityrunner_token');
             if (sessionToken) {
-                try {
-                    const payload = JSON.parse(atob(sessionToken.split('.')[1] || 'e30='));
-                    const expiresAt = payload.exp * 1000;
-                    if (Date.now() > expiresAt) {
-                        window.localStorage.removeItem('cityrunner_token');
-                    }
-                } catch (error) {
+                const payload = decodeJwtPayload(sessionToken);
+                if (!payload || !payload.exp) {
+                    window.localStorage.removeItem('cityrunner_token');
+                    return;
+                }
+
+                const expiresAt = payload.exp * 1000;
+                if (Date.now() > expiresAt) {
                     window.localStorage.removeItem('cityrunner_token');
                 }
             }

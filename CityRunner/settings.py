@@ -12,7 +12,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 
 import os
 from pathlib import Path
-from urllib.parse import quote
+from urllib.parse import quote, unquote, urlparse, urlunparse
 
 import dj_database_url
 
@@ -89,33 +89,56 @@ WSGI_APPLICATION = 'CityRunner.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
-DATABASE_URL = os.environ.get('DATABASE_URL')
+DATABASE_URL = (os.environ.get('DATABASE_URL') or '').strip()
+
+
+def build_safe_database_url(raw_url):
+    if not raw_url:
+        return None
+
+    normalized = raw_url.strip().replace('postgres://', 'postgresql://', 1)
+    parsed = urlparse(normalized)
+
+    username = quote(unquote(parsed.username or ''), safe='')
+    password = quote(unquote(parsed.password or ''), safe='')
+    hostname = parsed.hostname or ''
+    port = f':{parsed.port}' if parsed.port else ''
+    path = parsed.path or ''
+    query = parsed.query or ''
+
+    if query and 'sslmode=' not in query:
+        query = f"{query}&sslmode=require"
+    elif not query:
+        query = 'sslmode=require'
+
+    netloc = hostname
+    if username:
+        netloc = f'{username}@{hostname}'
+    if password:
+        netloc = f'{username}:{password}@{hostname}'
+    if username and password:
+        netloc = f'{username}:{password}@{hostname}'
+
+    netloc = f'{netloc}{port}'
+    return urlunparse((parsed.scheme, netloc, path, query, parsed.fragment))
+
 
 if DATABASE_URL:
     try:
-        parsed_url = dj_database_url.parse(DATABASE_URL)
+        safe_url = build_safe_database_url(DATABASE_URL)
+        parsed_url = dj_database_url.parse(safe_url)
         if parsed_url.get('ENGINE') and parsed_url.get('NAME'):
             DATABASES = {'default': parsed_url}
         else:
             raise ValueError('URL de banco inválida')
     except Exception:
-        try:
-            safe_url = DATABASE_URL.replace('postgres://', 'postgresql://')
-            DATABASES = {
-                'default': dj_database_url.config(
-                    default=safe_url,
-                    conn_max_age=600,
-                    ssl_require=True,
-                )
-            }
-        except Exception:
-            DATABASES = {
-                'default': dj_database_url.config(
-                    default=f'sqlite:///{BASE_DIR / "db.sqlite3"}',
-                    conn_max_age=600,
-                    ssl_require=False,
-                )
-            }
+        DATABASES = {
+            'default': dj_database_url.config(
+                default=f'sqlite:///{BASE_DIR / "db.sqlite3"}',
+                conn_max_age=600,
+                ssl_require=False,
+            )
+        }
 else:
     DATABASES = {
         'default': dj_database_url.config(
