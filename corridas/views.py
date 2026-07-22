@@ -12,7 +12,7 @@ from django.views.decorators.csrf import csrf_exempt
 
 from .models import ComentarioCorrida, Corrida, UsuarioComentario, rankingPaceCorrida, usuario
 
-JWT_SECRET = os.environ.get("CITYRUNNER_JWT_SECRET", "cityrunner-secret")
+JWT_SECRET = os.environ.get("CITYRUNNER_JWT_SECRET", os.environ.get("SECRET_KEY", "cityrunner-secret"))
 JWT_TTL_HOURS = 8
 
 

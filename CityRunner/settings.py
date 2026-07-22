@@ -27,11 +27,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-dsd%03$1&g)wi$tl4rk*6(mj1rnixnkq^w@#letle@dkx&4isy')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get('DEBUG', 'False') == 'True'
+DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 
 ALLOWED_HOSTS = ['localhost', '127.0.0.1', '.vercel.app', '.now.sh']
 
-VERCEL_URL = os.environ.get('VERCEL_URL')
+VERCEL_URL = (os.environ.get('VERCEL_URL') or '').strip().replace('https://', '').replace('http://', '')
 if VERCEL_URL:
     ALLOWED_HOSTS.append(VERCEL_URL)
     CSRF_TRUSTED_ORIGINS = [f'https://{VERCEL_URL}', f'http://{VERCEL_URL}']
@@ -41,6 +41,12 @@ else:
 SESSION_ENGINE = 'django.contrib.sessions.backends.signed_cookies'
 SESSION_COOKIE_AGE = 60 * 60 * 8
 SESSION_SAVE_EVERY_REQUEST = True
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = 'Lax'
+SESSION_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_SAMESITE = 'Lax'
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 
 # Application definition
