@@ -284,3 +284,205 @@ h1 { font-size: clamp(1.9rem, 3vw, 2.8rem); }
     }
 
 }
+
+/* ---------- FORMULÁRIO DE COMENTÁRIOS ---------- */
+
+.comment-form-card{
+
+    display:flex;
+    flex-direction:column;
+    gap:16px;
+
+    margin-top:2px;
+    margin-bottom:2px;
+
+}
+
+.comment-form-card textarea{
+
+    width:100%;
+
+    resize:vertical;
+
+    min-height:70px;
+    max-height:150px;
+
+    padding:12px 14px;
+
+    border-radius:14px;
+
+    border:1px solid rgba(255,255,255,.08);
+
+    background:rgba(255,255,255,.04);
+
+    color:white;
+
+    font-size:.95rem;
+
+    font-family:'Inter',sans-serif;
+
+    line-height:1.5;
+
+    transition:.25s;
+
+}
+
+.comment-form-card textarea::placeholder{
+
+    color:var(--muted);
+
+}
+
+.comment-form-card textarea:focus{
+
+    outline:none;
+
+    border-color:var(--accent);
+
+    box-shadow:0 0 0 4px rgba(98,242,194,.15);
+
+    background:rgba(255,255,255,.06);
+
+}
+
+.comment-form-card select{
+
+    width:100%;
+
+    padding:14px 16px;
+
+    border-radius:14px;
+
+    border:1px solid rgba(255,255,255,.08);
+
+    background:rgba(255,255,255,.04);
+
+    color:white;
+
+    font-size:.95rem;
+
+    cursor:pointer;
+
+    transition:.25s;
+
+}
+
+.comment-form-card select option{
+
+    background:#111b2d;
+
+    color:white;
+
+}
+
+.comment-form-card select:focus{
+
+    outline:none;
+
+    border-color:var(--accent);
+
+    box-shadow:0 0 0 4px rgba(98,242,194,.15);
+
+}
+
+.comment-form-card .primary-btn{
+
+    width:100%;
+
+    padding:15px;
+
+    font-size:1rem;
+
+    letter-spacing:.3px;
+
+    transition:.25s;
+
+}
+
+.comment-form-card .primary-btn:hover{
+
+    transform:translateY(-2px);
+
+    box-shadow:0 12px 25px rgba(98,242,194,.25);
+
+}
+
+.comments-list{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:14px;
+
+    margin-top:20px;
+
+}
+
+.comment-item{
+
+    padding:16px;
+
+    border-radius:16px;
+
+    background:rgba(255,255,255,.03);
+
+    border:1px solid rgba(255,255,255,.06);
+
+    transition:.25s;
+
+}
+
+.comment-item:hover{
+
+    background:rgba(255,255,255,.05);
+
+    transform:translateY(-2px);
+
+}
+
+.comment-header{
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:center;
+
+    margin-bottom:10px;
+
+}
+
+.comment-user{
+
+    color:var(--muted);
+
+    font-size:.9rem;
+
+    font-weight:600;
+
+}
+
+.comment-stars{
+
+    color:#FFD54A;
+
+    font-weight:700;
+
+    font-size:.95rem;
+
+}
+
+.comment-text{
+
+    margin:0;
+
+    color:var(--text);
+
+    line-height:1.6;
+
+    font-size:.95rem;
+
+    word-break:break-word;
+
+}

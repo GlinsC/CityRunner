@@ -7,6 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ corrida.nome }} | CityRunner</title>
 
+    <link rel="icon" type="image/png" href="{% static 'ChatGPT Image 23 de jul. de 2026, 09_23_44.png' %}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
@@ -122,19 +123,31 @@
 
                     <div id="comments-list" class="comments-list">
                         {% for comentario in comentarios %}
-                            <div class="comment-item">
-                                <div>
-                                    <p>{{ comentario.comentario }}</p>
-                                    {% if comentario.usuarios.all %}
-                                        <small>{{ comentario.usuarios.first.usuario.nome }}</small>
-                                    {% endif %}
-                                </div>
-                                <span>{{ comentario.avaliacao }} ★</span>
+                        <div class="comment-item">
+                    
+                            <div class="comment-header">
+                    
+                                {% if comentario.usuarios.all %}
+                                <span class="comment-user">
+                                    👤 {{ comentario.usuarios.first.usuario.nome }}
+                                </span>
+                                {% endif %}
+                    
+                                <span class="comment-stars">
+                                    {{ comentario.avaliacao }} ★
+                                </span>
+                    
                             </div>
-                        {% empty %}
-                            <p class="muted">
-                                Ainda não há comentários para esta corrida.
+                    
+                            <p class="comment-text">
+                                {{ comentario.comentario }}
                             </p>
+                    
+                        </div>
+                        {% empty %}
+                        <p class="muted">
+                            Ainda não há comentários para esta corrida.
+                        </p>
                         {% endfor %}
                     </div>
 
